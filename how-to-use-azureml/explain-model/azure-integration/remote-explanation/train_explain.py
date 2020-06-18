@@ -7,7 +7,7 @@ from interpret.ext.blackbox import TabularExplainer
 from azureml.contrib.interpret.explanation.explanation_client import ExplanationClient
 from sklearn.model_selection import train_test_split
 from azureml.core.run import Run
-from sklearn.externals import joblib
+import joblib
 import os
 import numpy as np
 
@@ -61,4 +61,4 @@ global_explanation = tabular_explainer.explain_global(X_test)
 # Uploading model explanation data for storage or visualization in webUX
 # The explanation can then be downloaded on any compute
 comment = 'Global explanation on regression model trained on boston dataset'
-client.upload_model_explanation(global_explanation, comment=comment)
+client.upload_model_explanation(global_explanation, comment=comment, model_id=original_model.id)

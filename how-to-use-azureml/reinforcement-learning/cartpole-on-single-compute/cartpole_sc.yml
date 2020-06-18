@@ -1,0 +1,7 @@
+name: cartpole_sc
+dependencies:
+- pip:
+  - azureml-sdk
+  - azureml-contrib-reinforcementlearning
+  - azureml-widgets
+  - azureml-dataprep

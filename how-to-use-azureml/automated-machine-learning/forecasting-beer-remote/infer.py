@@ -1,12 +1,14 @@
-import pandas as pd
-import numpy as np
 import argparse
-from azureml.core import Run
+
+import numpy as np
+import pandas as pd
+
+from pandas.tseries.frequencies import to_offset
 from sklearn.externals import joblib
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from azureml.automl.core._vendor.automl.client.core.common import metrics
-from automl.client.core.common import constants
-from pandas.tseries.frequencies import to_offset
+
+from azureml.automl.runtime.shared.score import scoring, constants
+from azureml.core import Run
 
 
 def align_outputs(y_predicted, X_trans, X_test, y_test,
@@ -232,6 +234,9 @@ parser.add_argument(
 parser.add_argument(
     '--frequency', type=str, dest='freq',
     help='Frequency of prediction')
+parser.add_argument(
+    '--model_path', type=str, dest='model_path',
+    default='model.pkl', help='Filename of model to be loaded')
 
 
 args = parser.parse_args()
@@ -239,6 +244,7 @@ max_horizon = args.max_horizon
 target_column_name = args.target_column_name
 time_column_name = args.time_column_name
 freq = args.freq
+model_path = args.model_path
 
 
 print('args passed are: ')
@@ -246,6 +252,7 @@ print(max_horizon)
 print(target_column_name)
 print(time_column_name)
 print(freq)
+print(model_path)
 
 run = Run.get_context()
 # get input dataset by name
@@ -267,7 +274,8 @@ X_lookback_df = lookback_dataset.drop_columns(columns=[target_column_name])
 y_lookback_df = lookback_dataset.with_timestamp_columns(
     None).keep_columns(columns=[target_column_name])
 
-fitted_model = joblib.load('model.pkl')
+fitted_model = joblib.load(model_path)
+
 
 if hasattr(fitted_model, 'get_lookback'):
     lookback = fitted_model.get_lookback()
@@ -294,12 +302,11 @@ print(df_all[target_column_name])
 print("predicted values:::")
 print(df_all['predicted'])
 
-# use automl metrics module
-scores = metrics.compute_metrics_regression(
-    df_all['predicted'],
-    df_all[target_column_name],
-    list(constants.Metric.SCALAR_REGRESSION_SET),
-    None, None, None)
+# Use the AutoML scoring module
+regression_metrics = list(constants.REGRESSION_SCALAR_SET)
+y_test = np.array(df_all[target_column_name])
+y_pred = np.array(df_all['predicted'])
+scores = scoring.score_regression(y_test, y_pred, regression_metrics)
 
 print("scores:")
 print(scores)
